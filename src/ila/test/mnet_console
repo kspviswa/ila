@@ -1,0 +1,135 @@
+#!/bin/bash -E
+
+if [ "$EUID" -ne 0 ]
+  then echo "Please run as root....."
+  exit
+fi
+
+CWD=pwd
+export QDIR=~/quantonium/install
+MN_PROMPT="mobilenet> "
+
+function prompt {
+	printf $MN_PROMPT
+}
+
+function banner {
+	echo ""
+	echo "****************************************************"
+	printf "\tMobile EPC Network Simulator\n"
+	echo "****************************************************"
+	echo "" 
+}
+
+function handleHelp {
+	echo " Available commands:"
+	echo " -------------------"
+	echo ""
+	echo " To get help, type help or ?"
+	echo " To start / end simulation with default conf, type mnet start or mnet end"
+	echo " Once within simulation, type ilac or ip or run"
+	echo " To exit, type exit or quit"
+}
+
+function handleIlac_ns {
+	# echo "Printing ilac args"
+	# ilac_args=$1
+	# echo ${ilac_args[@]}
+	./ilac_ns $@
+}
+
+function handleIp_ns {
+	# echo "Printing ip args"
+	# ip_args=$1
+	# echo ${ip_args[@]}
+	./ip_ns $@
+}
+
+function handleRun_ns {
+	# echo "Printing run args"
+	# run_args=$1
+	# echo ${run_args[@]}
+	./run_ns $@
+}
+
+function handleExit {
+	echo "Destroying mobilenet...."
+	./destroy_mnet
+	echo "Bye!!"
+	exit
+}
+
+function startSimulation {
+	./mnet_conf
+}
+
+function endSimulation {
+	./destroy_mnet
+}
+
+function handleMnet {
+	# echo "Printing mnet args"
+	# echo $@
+	case $@ in
+		start)
+			startSimulation
+			;;
+		end)
+			endSimulation
+			;;
+	esac
+}
+
+function reconstruct {
+	for word in $1; do
+		str = $str+$word+" "
+	done
+return str
+}
+
+banner
+while :
+do
+	prompt
+	read ins
+	opts=( $ins )
+	case ${opts[0]} in
+		"")
+			;;
+		"mnet")
+			args=("${opts[@]:1}")
+			handleMnet $args
+			;;
+		"ilac")
+			# args=("${opts[@]:1}")
+			len=${#opts[@]}
+			args=("${opts[@]:1:$len}")
+			# echo "Inside while"
+			# echo ${args[@]}
+			handleIlac_ns ${args[@]}
+			;;
+		"ip")
+			len=${#opts[@]}
+			args=("${opts[@]:1:$len}")
+			handleIp_ns ${args[@]}
+			;;
+		"run")
+			len=${#opts[@]}
+			args=("${opts[@]:1:$len}")
+			handleRun_ns ${args[@]}
+			;;
+		help)
+			handleHelp
+			;;
+		exit)
+			;&
+		quit)
+			handleExit
+			;;
+		*)
+			echo "Unrecognized command... >*<"
+			;;
+	esac
+done
+
+# sudo QDIR=$QDIR PYTHONPATH="$QDIR/lib:$CWD" python3 mnet_conf.py
